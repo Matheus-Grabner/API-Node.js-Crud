@@ -10,54 +10,54 @@ let items = [];
 // Rota GET - Retorna todos os itens
 app.get("/items", (req, res) => {
     try {
-        const reposta = items;
+        const resposta = items;
         let user;
         let statusCode;
-        let massage;
+        let message;
         let dados;
 
-        if (reposta == null || reposta == "" || reposta == '' || reposta == []) {
+        if (resposta.length === 0) {
             user = items;
             statusCode = 200;
-            massage = `Nenhum usuário foi encontrado.`;
-
-            dados = {
-                user,
-                massage,
-                statusCode
-            };
-
+            message = `Nenhum usuário foi encontrado.`;
         } else {
             user = items;
             statusCode = 200;
-            massage = `Sucesso na busca de usuários.`;
-
-            dados = {
-                user,
-                massage,
-                statusCode
-            }
+            message = `Sucesso na busca de usuários.`;
         }
+
+        dados = { user, message, statusCode };
 
         console.log(`[SUCESSO] Retorno da API: ${JSON.stringify(dados)}`);
         res.json(dados);
     } catch (e) {
         console.log(`[ERRO] Retorno: ${e}`);
+        res.status(500).json({ message: "Erro interno do servidor." });
     }
 });
 
 // Rota POST - Adiciona um novo item
 app.post("/items", (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, age } = req.body;
 
         if (!name) {
             console.log(`[ERRO] O campo 'name' não foi preenchido.`);
 
-            return res.status(400).json([{
+            return res.status(400).json({
                 message: "O campo 'name' é obrigatório.",
                 statusCode: 400
-            }]);
+            });
+        }
+
+        let verificaName = typeof (name);
+        if (verificaName !== "string") {
+            console.log(`[ERRO] O campo 'name' não pode ser um Number.`);
+
+            return res.status(400).json({
+                message: "O campo 'name' não pode ser um Number.",
+                statusCode: 400
+            });
         }
 
         const userExists = items.some(user => user.name === name);
@@ -70,39 +70,42 @@ app.post("/items", (req, res) => {
             });
         }
 
-        const user = { id: items.length + 1, name };
-        const massage = `Sucesso na criação.`;
+        const user = { id: items.length + 1, name, age };
+        const message = `Sucesso na criação.`;
         const statusCode = 201;
 
-        const ret = [
-            {
-                user,
-                massage,
-                statusCode
-            }
-        ];
+        const ret = { user, message, statusCode };
 
         console.log(`[SUCESSO] Retorno da API: ${JSON.stringify(ret)}`);
         items.push(user);
         res.status(201).json(ret);
     } catch (e) {
-        res.status(400).json('erro');
         console.log(`[ERRO] Retorno: ${e}`);
+        res.status(500).json({ message: "Erro interno do servidor." });
     }
 });
 
 // Rota DELETE - Remove um item pelo ID
 app.delete("/items/:id", (req, res) => {
-    const { id } = req.params;
+    try {
+        const { id } = req.params;
+        const idNum = parseInt(id);
 
-    const user = { id: items.length + 1, name };
-    const massage = `Sucesso na criação.`;
-    const statusCode = 201;
+        const itemIndex = items.findIndex(item => item.id === idNum);
+        if (itemIndex === -1) {
+            return res.status(404).json({ message: "Item não encontrado." });
+        }
 
-    items = items.filter(item => item.id !== parseInt(id));
-    res.json({ message: "Item removido com sucesso!" });
+        items.splice(itemIndex, 1);
+        console.log(`[SUCESSO] Item removido: ID ${idNum}`);
+        res.json([{ message: `Item removido com sucesso!`, statusCode: 200 }]);
+    } catch (e) {
+        console.log(`[ERRO] Retorno: ${e}`);
+        res.status(500).json({ message: "Erro interno do servidor." });
+    }
 });
 
+// Iniciando o servidor
 app.listen(port, () => {
     // console.log(`Servidor rodando em http://localhost:${port}`);
 });
